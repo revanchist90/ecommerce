@@ -1,2 +1,18 @@
 databaseChangeLog:
   - logicalFilePath: db/changelog-master.yml
+
+  - changeSet:
+      id: "001-create-orders-table"
+      author: "ageorgoulias"
+      changes:
+        - sqlFile:
+            path: 'migrations/001-create-orders-table.sql'
+            relativeToChangelogFile: true
+
+  - changeSet:
+      id: "002-create-order-lines-table"
+      author: "ageorgoulias"
+      changes:
+        - sqlFile:
+            path: 'migrations/002-create-order-lines-table.sql'
+            relativeToChangelogFile: true
