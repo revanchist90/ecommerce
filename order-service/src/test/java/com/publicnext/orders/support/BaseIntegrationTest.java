@@ -1,21 +1,19 @@
-package com.publicnext.orders.persistence;
+package com.publicnext.orders.support;
 
-import com.publicnext.orders.support.TestPostgresContainer;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
-import static org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase.Replace.NONE;
-
-@DataJpaTest
-@AutoConfigureTestDatabase(replace = NONE)
-public abstract class BaseDataJpaTest {
+@SpringBootTest
+@AutoConfigureMockMvc
+public abstract class BaseIntegrationTest {
 
     @DynamicPropertySource
     static void configureDatasource(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", TestPostgresContainer.INSTANCE::getJdbcUrl);
         registry.add("spring.datasource.username", TestPostgresContainer.INSTANCE::getUsername);
         registry.add("spring.datasource.password", TestPostgresContainer.INSTANCE::getPassword);
+        registry.add("orders.auto-progression.enabled", () -> "false");
     }
 }

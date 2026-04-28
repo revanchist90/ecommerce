@@ -16,3 +16,27 @@ databaseChangeLog:
         - sqlFile:
             path: 'migrations/002-create-order-lines-table.sql'
             relativeToChangelogFile: true
+
+  - changeSet:
+      id: "003-create-inventory-table"
+      author: "ageorgoulias"
+      changes:
+        - sqlFile:
+            path: 'migrations/003-create-inventory-table.sql'
+            relativeToChangelogFile: true
+
+  - changeSet:
+      id: "004-seed-inventory"
+      author: "ageorgoulias"
+      changes:
+        - sqlFile:
+            path: 'migrations/004-seed-inventory.sql'
+            relativeToChangelogFile: true
+
+  - changeSet:
+      id: "005-create-order-events-table"
+      author: "ageorgoulias"
+      changes:
+        - sqlFile:
+            path: 'migrations/005-create-order-events-table.sql'
+            relativeToChangelogFile: true

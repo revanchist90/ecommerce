@@ -28,6 +28,14 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
 
+orders:
+  auto-progression:
+    enabled: true
+    fixed-delay: PT5S
+    unprocessed-to-processing: PT30S
+    processing-to-processed: PT60S
+    processed-to-shipped: PT90S
+
 management:
   endpoints:
     web:
