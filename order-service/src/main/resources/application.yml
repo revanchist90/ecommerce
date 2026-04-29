@@ -21,6 +21,17 @@ spring:
   liquibase:
     enabled: true
     change-log: classpath:db/changelog-master.yml
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+        delivery.timeout.ms: 10000
+        request.timeout.ms: 5000
 
 springdoc:
   api-docs:
@@ -35,12 +46,16 @@ orders:
     unprocessed-to-processing: PT30S
     processing-to-processed: PT60S
     processed-to-shipped: PT90S
+  kafka:
+    topic: orders.events
+    send-timeout: PT5S
 
 outbox:
   poll:
     enabled: true
     fixed-delay: PT2S
     batch-size: 50
+  publisher: kafka  # 'kafka' (default) or 'logging' for local dev without a broker
 
 management:
   endpoints:

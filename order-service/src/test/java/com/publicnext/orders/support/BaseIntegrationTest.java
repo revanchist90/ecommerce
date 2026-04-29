@@ -14,6 +14,7 @@ public abstract class BaseIntegrationTest {
         registry.add("spring.datasource.url", TestPostgresContainer.INSTANCE::getJdbcUrl);
         registry.add("spring.datasource.username", TestPostgresContainer.INSTANCE::getUsername);
         registry.add("spring.datasource.password", TestPostgresContainer.INSTANCE::getPassword);
+        registry.add("spring.kafka.bootstrap-servers", TestKafkaContainer.INSTANCE::getBootstrapServers);
         registry.add("orders.auto-progression.enabled", () -> "false");
         registry.add("outbox.poll.enabled", () -> "false");
     }

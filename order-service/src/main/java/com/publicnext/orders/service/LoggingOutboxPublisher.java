@@ -2,12 +2,12 @@ package com.publicnext.orders.service;
 
 import com.publicnext.orders.domain.OutboxEvent;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-@ConditionalOnMissingBean(OutboxPublisher.class)
+@ConditionalOnProperty(prefix = "outbox", name = "publisher", havingValue = "logging")
 public class LoggingOutboxPublisher implements OutboxPublisher {
 
     @Override
