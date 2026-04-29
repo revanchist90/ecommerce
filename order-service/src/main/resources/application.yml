@@ -36,6 +36,12 @@ orders:
     processing-to-processed: PT60S
     processed-to-shipped: PT90S
 
+outbox:
+  poll:
+    enabled: true
+    fixed-delay: PT2S
+    batch-size: 50
+
 management:
   endpoints:
     web:

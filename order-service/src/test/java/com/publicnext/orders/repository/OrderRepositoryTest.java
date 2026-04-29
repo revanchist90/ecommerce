@@ -113,18 +113,24 @@ class OrderRepositoryTest extends BaseDataJpaTest {
     }
 
     @Test
-    void softDelete_persistsDeletedAt() {
+    void softDelete_setsDeletedAt_andHidesRowFromManagedQueries() {
         Order saved = orderRepository.saveAndFlush(newOrder());
+        Long pk = saved.getId();
         em.clear();
 
-        Order reloaded = orderRepository.findById(saved.getId()).orElseThrow();
-        Instant deletedAt = Instant.now();
-        reloaded.setDeletedAt(deletedAt);
+        Order reloaded = orderRepository.findById(pk).orElseThrow();
+        reloaded.setDeletedAt(Instant.now());
         orderRepository.saveAndFlush(reloaded);
         em.clear();
 
-        Order afterDelete = orderRepository.findById(saved.getId()).orElseThrow();
-        assertThat(afterDelete.getDeletedAt()).isNotNull();
+        assertThat(orderRepository.findById(pk)).isEmpty();
+        assertThat(orderRepository.findByOrderId(saved.getOrderId())).isEmpty();
+
+        Object rawDeletedAt = em.getEntityManager()
+                .createNativeQuery("SELECT deleted_at FROM orders WHERE id = :id")
+                .setParameter("id", pk)
+                .getSingleResult();
+        assertThat(rawDeletedAt).isNotNull();
     }
 
     private Order newOrder() {

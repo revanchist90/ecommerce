@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
-public record CreateOrderRequest(
+public record UpdateOrderRequest(
         @NotNull UUID customerId,
         @NotEmpty @Valid List<LineRequest> orderLines
 ) {
@@ -18,5 +18,6 @@ public record CreateOrderRequest(
             @NotNull UUID productId,
             @NotNull @Min(1) Integer quantity,
             @NotNull @DecimalMin("0.0") BigDecimal unitPrice
-    ) implements OrderLineInput {}
+    ) implements OrderLineInput {
+    }
 }

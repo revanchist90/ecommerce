@@ -40,3 +40,19 @@ databaseChangeLog:
         - sqlFile:
             path: 'migrations/005-create-order-events-table.sql'
             relativeToChangelogFile: true
+
+  - changeSet:
+      id: "006-create-outbox-table"
+      author: "ageorgoulias"
+      changes:
+        - sqlFile:
+            path: 'migrations/006-create-outbox-table.sql'
+            relativeToChangelogFile: true
+
+  - changeSet:
+      id: "007-extend-order-event-type-check"
+      author: "ageorgoulias"
+      changes:
+        - sqlFile:
+            path: 'migrations/007-extend-order-event-type-check.sql'
+            relativeToChangelogFile: true

@@ -41,6 +41,14 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.of(HttpStatus.CONFLICT.value(), e.getMessage()));
     }
 
+    @ExceptionHandler(OrderNotEditableException.class)
+    public ResponseEntity<ErrorResponse> handleOrderNotEditable(OrderNotEditableException e) {
+        log.warn("Order not editable: {}", e.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(ErrorResponse.of(HttpStatus.CONFLICT.value(), e.getMessage()));
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException e) {
         List<String> details = e.getBindingResult().getFieldErrors().stream()

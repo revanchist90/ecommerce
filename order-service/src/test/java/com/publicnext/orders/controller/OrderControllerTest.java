@@ -5,9 +5,13 @@ import com.publicnext.orders.domain.OrderEventType;
 import com.publicnext.orders.domain.OrderStatus;
 import com.publicnext.orders.dto.CreateOrderRequest;
 import com.publicnext.orders.dto.OrderEventResponse;
+import com.publicnext.orders.dto.OrderListFilter;
 import com.publicnext.orders.dto.OrderResponse;
+import com.publicnext.orders.dto.PagedResponse;
+import com.publicnext.orders.dto.UpdateOrderRequest;
 import com.publicnext.orders.exception.InsufficientStockException;
 import com.publicnext.orders.exception.InvalidStatusTransitionException;
+import com.publicnext.orders.exception.OrderNotEditableException;
 import com.publicnext.orders.exception.OrderNotFoundException;
 import com.publicnext.orders.service.OrderService;
 import org.junit.jupiter.api.Test;
@@ -23,11 +27,13 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -115,6 +121,55 @@ class OrderControllerTest {
                         .content(body))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errors[0]").value(org.hamcrest.Matchers.containsString("quantity")));
+    }
+
+    @Test
+    void listOrders_returnsPageWithFilters() throws Exception {
+        UUID orderId = UUID.randomUUID();
+        UUID customerId = UUID.randomUUID();
+        OrderResponse content = new OrderResponse(
+                orderId, customerId, OrderStatus.PROCESSING, Instant.now(),
+                new BigDecimal("10.00"), List.of(), Instant.now(), Instant.now()
+        );
+        PagedResponse<OrderResponse> page = new PagedResponse<>(List.of(content), 0, 20, 1L, 1);
+
+        when(orderService.listOrders(
+                argThat((OrderListFilter f) -> f != null
+                        && f.status() == OrderStatus.PROCESSING
+                        && customerId.equals(f.customerId())),
+                any())
+        ).thenReturn(page);
+
+        mockMvc.perform(get("/api/v1/orders")
+                        .param("status", "PROCESSING")
+                        .param("customerId", customerId.toString())
+                        .param("page", "0")
+                        .param("size", "20"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content", org.hamcrest.Matchers.hasSize(1)))
+                .andExpect(jsonPath("$.content[0].orderId").value(orderId.toString()))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(20));
+    }
+
+    @Test
+    void listOrders_noFilters_passesNullFilterFields() throws Exception {
+        PagedResponse<OrderResponse> empty = new PagedResponse<>(List.of(), 0, 20, 0L, 0);
+
+        when(orderService.listOrders(
+                argThat((OrderListFilter f) -> f != null
+                        && f.status() == null
+                        && f.customerId() == null
+                        && f.createdFrom() == null
+                        && f.createdTo() == null),
+                any())
+        ).thenReturn(empty);
+
+        mockMvc.perform(get("/api/v1/orders"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content", org.hamcrest.Matchers.hasSize(0)))
+                .andExpect(jsonPath("$.totalElements").value(0));
     }
 
     @Test
@@ -220,6 +275,102 @@ class OrderControllerTest {
                         .content("{\"status\":\"PROCESSING\"}"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404));
+    }
+
+    @Test
+    void updateOrder_validRequest_returns200() throws Exception {
+        UUID orderId = UUID.randomUUID();
+        UUID customerId = UUID.randomUUID();
+        UUID productId = UUID.randomUUID();
+
+        UpdateOrderRequest request = new UpdateOrderRequest(
+                customerId,
+                List.of(new UpdateOrderRequest.LineRequest(productId, 2, new BigDecimal("10.00")))
+        );
+
+        OrderResponse response = new OrderResponse(
+                orderId, customerId, OrderStatus.UNPROCESSED, Instant.now(),
+                new BigDecimal("20.00"), List.of(), Instant.now(), Instant.now()
+        );
+
+        when(orderService.updateOrder(eq(orderId), any())).thenReturn(response);
+
+        mockMvc.perform(put("/api/v1/orders/{orderId}", orderId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.orderId").value(orderId.toString()))
+                .andExpect(jsonPath("$.totalAmount").value(20.00));
+    }
+
+    @Test
+    void updateOrder_emptyOrderLines_returns400() throws Exception {
+        UpdateOrderRequest request = new UpdateOrderRequest(UUID.randomUUID(), List.of());
+
+        mockMvc.perform(put("/api/v1/orders/{orderId}", UUID.randomUUID())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0]").value(org.hamcrest.Matchers.containsString("orderLines")));
+    }
+
+    @Test
+    void updateOrder_unknownOrder_returns404() throws Exception {
+        UUID orderId = UUID.randomUUID();
+        UpdateOrderRequest request = new UpdateOrderRequest(
+                UUID.randomUUID(),
+                List.of(new UpdateOrderRequest.LineRequest(UUID.randomUUID(), 1, new BigDecimal("5.00")))
+        );
+
+        when(orderService.updateOrder(eq(orderId), any()))
+                .thenThrow(new OrderNotFoundException(orderId));
+
+        mockMvc.perform(put("/api/v1/orders/{orderId}", orderId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
+    }
+
+    @Test
+    void updateOrder_orderNotEditable_returns409() throws Exception {
+        UUID orderId = UUID.randomUUID();
+        UpdateOrderRequest request = new UpdateOrderRequest(
+                UUID.randomUUID(),
+                List.of(new UpdateOrderRequest.LineRequest(UUID.randomUUID(), 1, new BigDecimal("5.00")))
+        );
+
+        when(orderService.updateOrder(eq(orderId), any()))
+                .thenThrow(new OrderNotEditableException(orderId, OrderStatus.PROCESSING));
+
+        mockMvc.perform(put("/api/v1/orders/{orderId}", orderId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.message").value(
+                        org.hamcrest.Matchers.containsString("PROCESSING")));
+    }
+
+    @Test
+    void updateOrder_insufficientStock_returns409() throws Exception {
+        UUID orderId = UUID.randomUUID();
+        UUID productId = UUID.randomUUID();
+        UpdateOrderRequest request = new UpdateOrderRequest(
+                UUID.randomUUID(),
+                List.of(new UpdateOrderRequest.LineRequest(productId, 100, new BigDecimal("5.00")))
+        );
+
+        when(orderService.updateOrder(eq(orderId), any()))
+                .thenThrow(new InsufficientStockException(
+                        List.of(new InsufficientStockException.Detail(productId, 100, 3))));
+
+        mockMvc.perform(put("/api/v1/orders/{orderId}", orderId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.errors[0]").value(
+                        org.hamcrest.Matchers.containsString("requested 100, available 3")));
     }
 
     @Test

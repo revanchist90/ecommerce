@@ -15,5 +15,6 @@ public abstract class BaseIntegrationTest {
         registry.add("spring.datasource.username", TestPostgresContainer.INSTANCE::getUsername);
         registry.add("spring.datasource.password", TestPostgresContainer.INSTANCE::getPassword);
         registry.add("orders.auto-progression.enabled", () -> "false");
+        registry.add("outbox.poll.enabled", () -> "false");
     }
 }
