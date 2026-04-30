@@ -14,6 +14,7 @@ spring:
       enable-auto-commit: false
     listener:
       ack-mode: record
+      observation-enabled: true
 
 orders:
   kafka:
@@ -24,6 +25,15 @@ notifications:
     attempts: 3        # initial + 2 retries; 3rd failure → DLT
     delay-ms: 5000     # first retry waits 5s
     multiplier: 6      # second retry waits 30s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+  tracing:
+    sampling:
+      probability: 1.0
 
 resilience4j:
   circuitbreaker:

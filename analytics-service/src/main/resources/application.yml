@@ -17,7 +17,17 @@ spring:
       enable-auto-commit: false
     listener:
       ack-mode: record
+      observation-enabled: true
 
 orders:
   kafka:
     topic: orders.events
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+  tracing:
+    sampling:
+      probability: 1.0
